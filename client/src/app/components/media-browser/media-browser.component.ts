@@ -153,7 +153,8 @@ export class MediaBrowserComponent {
   }
 
   pollLabel(relativePath: string, retryCount = 0) {
-    if (retryCount > 10) { // Max 30 másodperc polling
+    if (retryCount >= 10) { // Max 30 másodperc polling
+      this.aiErrors.update(state => ({ ...state, [relativePath]: 'Timeout' }));
       this.analyzing.update(state => ({ ...state, [relativePath]: false }));
       return;
     }
@@ -164,10 +165,26 @@ export class MediaBrowserComponent {
         this.analyzing.update(state => ({ ...state, [relativePath]: false }));
       },
       error: (err) => {
-        if (err.status === 202 || (err.status === 404 && retryCount < 10)) {
-          // Ha még nincs kész (202) vagy még létre sem jött a fájl (404), próbálkozzunk újra
+        // Ha 202 (Processing), akkor folytatjuk a pollingot
+        if (err.status === 202) {
+          setTimeout(() => this.pollLabel(relativePath, retryCount + 1), 3000);
+        } else if (err.status === 404) {
+          // Ha 404, az azt jelenti, hogy még nincs kész VAGY hiba történt a háttérben.
+          // Megnézzük, hogy a háttérben még fut-e (ha tudjuk), de itt egyszerűbb
+          // ha csak simán retry-olunk amíg el nem érjük a limitet, DE ha hiba van,
+          // azt a triggerLabel error ága már kezelte (vagy fogja).
+
+          // Mivel a triggerLabel indítja el, ha ott hiba van, az analyzing már false lesz.
+          // De ha itt kapunk 404-et, az lehet átmeneti.
           setTimeout(() => this.pollLabel(relativePath, retryCount + 1), 3000);
         } else {
+          // Minden más hiba (500, 503, stb.) esetén megállunk
+          console.error('Polling error:', err);
+          let errorMsg = 'AI Error';
+          if (err.status === 500 && err.error?.error === 'AI_MODEL_ERROR') {
+            errorMsg = 'Model error';
+          }
+          this.aiErrors.update(state => ({ ...state, [relativePath]: errorMsg }));
           this.analyzing.update(state => ({ ...state, [relativePath]: false }));
         }
       }

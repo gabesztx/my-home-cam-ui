@@ -30,8 +30,10 @@ export class AiLabelerService {
   private async loadClasses() {
     try {
       const classesPath = path.join(__dirname, '../../assets/models/coco-classes.json');
+      console.log(`Loading classes from: ${classesPath}`);
       const data = await fs.readFile(classesPath, 'utf8');
       this.classes = JSON.parse(data);
+      console.log(`Loaded ${this.classes.length} classes`);
     } catch (err) {
       console.error('Failed to load COCO classes:', err);
     }
@@ -52,10 +54,16 @@ export class AiLabelerService {
       if (!existsSync(config.aiModelPath)) {
         throw new Error(`Model file not found at ${config.aiModelPath}`);
       }
-      this.session = await ort.InferenceSession.create(config.aiModelPath);
+      console.log(`Loading ONNX model from: ${config.aiModelPath}`);
+      this.session = await ort.InferenceSession.create(config.aiModelPath, {
+        executionProviders: ['cpu'],
+        logSeverityLevel: 3 // Only errors
+      });
+      console.log('ONNX model loaded successfully');
       return this.session;
     } catch (err) {
       console.error('Failed to load ONNX model:', err);
+      this.session = null; // Ensure it stays null on failure
       throw err;
     }
   }
@@ -143,6 +151,8 @@ export class AiLabelerService {
         createdAt: new Date().toISOString()
       };
 
+      console.log(`Video processed: ${relativePath}, found: ${labels.join(', ') || 'NOTHING'}`);
+
       // Cache result
       if (!existsSync(this.cacheDir)) {
         await fs.mkdir(this.cacheDir, { recursive: true });
@@ -160,9 +170,25 @@ export class AiLabelerService {
 
   private parseYoloOutput(data: Float32Array, dims: number[]) {
     // Basic YOLO post-processing
-    // Assuming YOLOv8 output: [1, 4 + num_classes, 8400]
-    const numClasses = dims[1] - 4;
-    const numPredictions = dims[2];
+    // YOLOv8/v11 output is typically [1, 4 + num_classes, 8400]
+    // OR [1, 8400, 4 + num_classes] depending on the export format.
+    // Based on the 'dims' let's try to detect the format.
+    
+    let numClasses: number;
+    let numPredictions: number;
+    let transposed = false;
+
+    if (dims[1] > dims[2]) {
+      // Format: [1, 8400, 4 + num_classes]
+      numPredictions = dims[1];
+      numClasses = dims[2] - 4;
+      transposed = true;
+    } else {
+      // Format: [1, 4 + num_classes, 8400]
+      numClasses = dims[1] - 4;
+      numPredictions = dims[2];
+    }
+
     const detections: { classId: number; confidence: number; box: number[] }[] = [];
 
     for (let i = 0; i < numPredictions; i++) {
@@ -170,18 +196,22 @@ export class AiLabelerService {
       let classId = -1;
 
       for (let j = 0; j < numClasses; j++) {
-        const score = data[(4 + j) * numPredictions + i];
+        const score = transposed 
+          ? data[i * (numClasses + 4) + (4 + j)]
+          : data[(4 + j) * numPredictions + i];
+          
         if (score > maxScore) {
           maxScore = score;
           classId = j;
         }
       }
 
-      if (maxScore > 0.3) {
-        const x = data[0 * numPredictions + i];
-        const y = data[1 * numPredictions + i];
-        const w = data[2 * numPredictions + i];
-        const h = data[3 * numPredictions + i];
+      if (maxScore > 0.25) { // YOLO default confidence
+        const x = transposed ? data[i * (numClasses + 4) + 0] : data[0 * numPredictions + i];
+        const y = transposed ? data[i * (numClasses + 4) + 1] : data[1 * numPredictions + i];
+        const w = transposed ? data[i * (numClasses + 4) + 2] : data[2 * numPredictions + i];
+        const h = transposed ? data[i * (numClasses + 4) + 3] : data[3 * numPredictions + i];
+        
         detections.push({
           classId,
           confidence: maxScore,
@@ -190,21 +220,23 @@ export class AiLabelerService {
       }
     }
 
-    // Simple NMS could be added here, but for "pipeline" goal, this might be enough
     return detections;
   }
 
   private mapObjectsToLabels(objectClasses: string[]): string[] {
     const labelSet = new Set<string>();
     
-    const personClasses = ['person'];
-    const animalClasses = ['cat', 'dog', 'bird', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe'];
-    const vehicleClasses = ['car', 'bus', 'truck', 'motorcycle', 'bicycle'];
+    // Some models might have different class names or indices.
+    // Ensure we match common variations.
+    const personClasses = ['person', 'human'];
+    const animalClasses = ['cat', 'dog', 'bird', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'animal'];
+    const vehicleClasses = ['car', 'bus', 'truck', 'motorcycle', 'bicycle', 'van', 'vehicle'];
 
     for (const cls of objectClasses) {
-      if (personClasses.includes(cls)) labelSet.add('EMBER');
-      else if (animalClasses.includes(cls)) labelSet.add('ÁLLAT');
-      else if (vehicleClasses.includes(cls)) labelSet.add('JÁRMŰ');
+      const lowerCls = cls.toLowerCase();
+      if (personClasses.includes(lowerCls)) labelSet.add('EMBER');
+      else if (animalClasses.includes(lowerCls)) labelSet.add('ÁLLAT');
+      else if (vehicleClasses.includes(lowerCls)) labelSet.add('JÁRMŰ');
     }
 
     return Array.from(labelSet);
