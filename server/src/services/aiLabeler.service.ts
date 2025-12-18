@@ -6,6 +6,7 @@ import { existsSync } from 'fs';
 import crypto from 'crypto';
 import { config } from '../config/env';
 import { extractFrameToTempJpg } from '../utils/frameExtractor';
+import { mediaScannerService } from './mediaScanner.service';
 
 export interface AiLabel {
   relativePath: string;
@@ -87,7 +88,8 @@ export class AiLabelerService {
   }
 
   private async processVideo(relativePath: string): Promise<AiLabel> {
-    const tempFrame = await extractFrameToTempJpg(relativePath, config.aiFrameWidth, config.aiFrameMode as any);
+    const fullPath = mediaScannerService.getSafePath(relativePath);
+    const tempFrame = await extractFrameToTempJpg(fullPath, config.aiFrameWidth, config.aiFrameMode as any);
     
     try {
       const session = await this.loadModel();

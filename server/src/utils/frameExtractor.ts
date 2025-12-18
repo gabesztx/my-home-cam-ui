@@ -2,14 +2,11 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
-import { mediaScannerService } from './mediaScanner.service';
-
 export async function extractFrameToTempJpg(
-  relativePath: string,
+  fullPath: string,
   width: number = 640,
   mode: 'middle' | 'start' = 'middle'
 ): Promise<string> {
-  const fullPath = mediaScannerService.getSafePath(relativePath);
   const tempDir = path.resolve(__dirname, '../../../server/.cache/tmp');
   
   if (!existsSync(tempDir)) {
