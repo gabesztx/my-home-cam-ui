@@ -26,6 +26,7 @@ export class MediaBrowserComponent {
 
   loading = signal(false);
   error = signal<string | null>(null);
+  aiStatus = signal<{ enabled: boolean; modelExists: boolean; modelPath: string } | null>(null);
 
   thumbnailStates = signal<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
@@ -36,6 +37,11 @@ export class MediaBrowserComponent {
 
   constructor() {
     this.loadCameras();
+    this.loadAiStatus();
+  }
+
+  loadAiStatus() {
+    this.mediaApi.getAiStatus().subscribe(status => this.aiStatus.set(status));
   }
 
   loadCameras() {

@@ -215,6 +215,18 @@ export class MediaController {
       next(error);
     }
   }
+
+  async getAiStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.json({
+        enabled: config.aiEnabled,
+        modelExists: fs.existsSync(config.aiModelPath),
+        modelPath: config.aiModelPath
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const mediaController = new MediaController();

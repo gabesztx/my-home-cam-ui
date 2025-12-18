@@ -102,6 +102,11 @@ Az AI működéséhez szükség van egy YOLO modellre az ONNX formátumban:
 - `server/assets/models/yolo.onnx`
 - `server/assets/models/coco-classes.json` (A projekt tartalmazza)
 
+**A modell letöltéséhez futtathatja az alábbi segédscriptet:**
+```bash
+cd server && ./download_model.sh
+```
+
 Az elemzések eredményei a `server/.cache/labels/` mappában tárolódnak JSON formátumban.
 
 ## Rendszerkövetelmények (Thumbnail és AI)

@@ -10,5 +10,6 @@ router.get('/videos/stream', mediaController.streamVideo);
 router.get('/videos/thumbnail', mediaController.getThumbnail);
 router.get('/videos/labels', mediaController.getLabel);
 router.post('/videos/labels', mediaController.triggerLabel);
+router.get('/ai-status', mediaController.getAiStatus);
 
 export default router;

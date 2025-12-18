@@ -21,6 +21,24 @@
   align-items: center;
 }
 
+.warning-banner {
+  background-color: #fff9c4;
+  color: #827717;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 5px solid #fbc02d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+
+  code {
+    background: rgba(0,0,0,0.05);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+}
+
 .controls {
   display: flex;
   gap: 20px;

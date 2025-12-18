@@ -39,4 +39,8 @@ export class MediaApiService {
   triggerLabel(relativePath: string): Observable<AiLabel | { status: string }> {
     return this.http.post<AiLabel | { status: string }>(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`, {});
   }
+
+  getAiStatus(): Observable<{ enabled: boolean; modelExists: boolean; modelPath: string }> {
+    return this.http.get<{ enabled: boolean; modelExists: boolean; modelPath: string }>(`${this.apiUrl}/ai-status`);
+  }
 }

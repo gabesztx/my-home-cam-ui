@@ -8,6 +8,15 @@
     </div>
   }
 
+  @if (aiStatus()?.enabled && !aiStatus()?.modelExists) {
+    <div class="warning-banner ai-model-warning">
+      <strong>AI Figyelmeztetés:</strong> Az AI engedélyezve van, de a modell fájl hiányzik:
+      <code>{{ aiStatus()?.modelPath }}</code>
+      <br>
+      Kérjük, töltse le a modellt a szerverre a funkció használatához.
+    </div>
+  }
+
   <div class="controls">
     <div class="control-group">
       <label for="camera-select">Kamera:</label>
