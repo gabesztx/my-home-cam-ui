@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { CommonModule } from '@angular/common';
 import { MediaApiService } from '../../services/media-api.service';
 import { VideoItem } from '../../models/media.model';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, of, interval, takeWhile, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-media-browser',
@@ -163,9 +163,43 @@ export class MediaBrowserComponent {
             [video.relativePath]: 'error'
           }));
           return of(null);
+        }),
+        switchMap(() => {
+          // Start polling for the label (every 2 seconds, max 30 attempts = 1 minute)
+          let attempts = 0;
+          return interval(2000).pipe(
+            switchMap(() => this.mediaApi.getLabel(video.relativePath)),
+            takeWhile((result) => {
+              attempts++;
+              // Continue polling if no result and haven't exceeded max attempts
+              return !result && attempts < 30;
+            }, true), // inclusive: emit the last value that fails the predicate
+            catchError(() => of(null))
+          );
         })
       )
-      .subscribe();
+      .subscribe(labelResult => {
+        if (labelResult) {
+          // Label found, update the video in the list
+          this.videos.update(videos =>
+            videos.map(v =>
+              v.relativePath === video.relativePath
+                ? { ...v, label: { topLabel: labelResult.topLabel, confidence: labelResult.confidence } }
+                : v
+            )
+          );
+          this.labelStates.update(states => ({
+            ...states,
+            [video.relativePath]: 'done'
+          }));
+        } else {
+          // Polling timed out or failed
+          this.labelStates.update(states => ({
+            ...states,
+            [video.relativePath]: 'error'
+          }));
+        }
+      });
   }
 
   getLabelBadgeClass(label: string): string {

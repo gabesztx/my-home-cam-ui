@@ -10,7 +10,7 @@ export class MediaScannerService {
   async listCameras(): Promise<string[]> {
     const entries = await fs.readdir(this.mediaRoot, { withFileTypes: true });
     return entries
-      .filter(entry => entry.isDirectory())
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
       .map(entry => entry.name)
       .sort((a, b) => a.localeCompare(b));
   }
