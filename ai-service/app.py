@@ -1,6 +1,12 @@
 import io
 import os
 
+# CPU-only / no hw acceleration:
+# - CUDA is disabled
+# - NNPACK warning on some CPUs can be disabled (harmless otherwise)
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+os.environ.setdefault("TORCH_DISABLE_NNPACK", "1")
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
