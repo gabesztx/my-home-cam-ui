@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config/env';
 import { VideoItem } from '../dto/media.dto';
+import { aiLabelerService } from './aiLabeler.service';
 
 export class MediaScannerService {
   private readonly mediaRoot = config.mediaRoot;
@@ -31,19 +32,34 @@ export class MediaScannerService {
     const datePath = this.getSafePath(cameraId, date);
 
     const entries = await fs.readdir(datePath, { withFileTypes: true });
-    const videos: VideoItem[] = entries
-      .filter(entry => entry.isFile() && (entry.name.endsWith('.mp4') || entry.name.endsWith('.mkv')))
-      .map(entry => {
-        const time = this.formatTimeFromFilename(entry.name);
-        return {
-          file: entry.name,
-          time,
-          relativePath: path.join(cameraId, date, entry.name)
-        };
-      })
-      .sort((a, b) => a.file.localeCompare(b.file));
+    const videos: VideoItem[] = await Promise.all(
+      entries
+        .filter(entry => entry.isFile() && (entry.name.endsWith('.mp4') || entry.name.endsWith('.mkv')))
+        .map(async entry => {
+          const time = this.formatTimeFromFilename(entry.name);
+          const relativePath = path.join(cameraId, date, entry.name);
+          
+          let label;
+          if (config.aiEnabled) {
+            const cachedLabel = await aiLabelerService.getLabel(relativePath);
+            if (cachedLabel) {
+              label = {
+                topLabel: cachedLabel.topLabel,
+                confidence: cachedLabel.confidence
+              };
+            }
+          }
 
-    return videos;
+          return {
+            file: entry.name,
+            time,
+            relativePath,
+            label
+          };
+        })
+    );
+
+    return videos.sort((a, b) => a.file.localeCompare(b.file));
   }
 
   getSafePath(...parts: string[]): string {

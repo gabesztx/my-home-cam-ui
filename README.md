@@ -82,8 +82,29 @@ MEDIA_ROOT=/home/gabesz/share/camera/aqara_video
 - `GET /api/cameras/:cameraId/dates/:date/videos`: Videók listája egy adott napon.
 - `GET /api/videos/stream?path=<relativePath>`: Videó streamelése (támogatja a Range requesteket).
 - `GET /api/videos/thumbnail?path=<relativePath>&w=<width>&mode=<mode>`: Videó előnézeti kép generálása/lekérése.
+- `GET /api/videos/labels?path=<relativePath>`: Videó AI címkéinek lekérése.
+- `POST /api/videos/labels?path=<relativePath>`: Videó AI analízisének indítása.
 
-## Rendszerkövetelmények (Thumbnail generáláshoz)
+## AI Funkciók (CPU-only Objektumdetektálás)
+
+A projekt támogatja az AI alapú videó kategorizálást (EMBER, ÁLLAT, JÁRMŰ) ONNX runtime használatával.
+
+### AI Beállítása (ENV)
+Az alábbi változókkal konfigurálható az AI a `.env` fájlokban:
+- `AI_ENABLED=true`: AI funkció bekapcsolása.
+- `AI_MODEL_PATH`: Az ONNX modell abszolút útvonala (alapértelmezett: `server/assets/models/yolo.onnx`).
+- `AI_CONFIDENCE=0.55`: Megbízhatósági küszöb.
+- `AI_FRAME_MODE=middle`: Melyik frame-et elemezze (middle vagy start).
+- `AI_FRAME_WIDTH=640`: Elemzéshez használt kép szélessége.
+
+### Szükséges fájlok
+Az AI működéséhez szükség van egy YOLO modellre az ONNX formátumban:
+- `server/assets/models/yolo.onnx`
+- `server/assets/models/coco-classes.json` (A projekt tartalmazza)
+
+Az elemzések eredményei a `server/.cache/labels/` mappában tárolódnak JSON formátumban.
+
+## Rendszerkövetelmények (Thumbnail és AI)
 
 A videó előnézeti képek generálásához a szerveren telepítve kell lennie az **ffmpeg** eszköznek.
 - **macOS**: `brew install ffmpeg`

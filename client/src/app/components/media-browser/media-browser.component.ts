@@ -17,6 +17,7 @@ export class MediaBrowserComponent {
   cameras = signal<string[]>([]);
   dates = signal<string[]>([]);
   videos = signal<VideoItem[]>([]);
+  analyzing = signal<Record<string, boolean>>({});
 
   selectedCamera = signal<string | null>(null);
   selectedDate = signal<string | null>(null);
@@ -103,10 +104,60 @@ export class MediaBrowserComponent {
       )
       .subscribe(videos => {
         const initialStates: Record<string, 'loading' | 'loaded' | 'error'> = {};
-        videos.forEach(v => initialStates[v.relativePath] = 'loading');
+        videos.forEach(v => {
+          initialStates[v.relativePath] = 'loading';
+          if (!v.label) {
+            this.triggerAnalysis(v.relativePath);
+          }
+        });
         this.thumbnailStates.set(initialStates);
         this.videos.set(videos);
       });
+  }
+
+  triggerAnalysis(relativePath: string) {
+    if (this.analyzing()[relativePath]) return;
+
+    this.analyzing.update(state => ({ ...state, [relativePath]: true }));
+
+    this.mediaApi.triggerLabel(relativePath).subscribe({
+      next: (res) => {
+        if ('topLabel' in res) {
+          this.updateVideoLabel(relativePath, res.topLabel, res.confidence);
+          this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+        } else {
+          // Poll for result after 3 seconds
+          setTimeout(() => this.pollLabel(relativePath), 3000);
+        }
+      },
+      error: () => {
+        this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+      }
+    });
+  }
+
+  pollLabel(relativePath: string) {
+    this.mediaApi.getLabel(relativePath).subscribe({
+      next: (label) => {
+        this.updateVideoLabel(relativePath, label.topLabel, label.confidence);
+        this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+      },
+      error: (err) => {
+        if (err.status === 202) {
+          setTimeout(() => this.pollLabel(relativePath), 3000);
+        } else {
+          this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+        }
+      }
+    });
+  }
+
+  updateVideoLabel(relativePath: string, topLabel: string, confidence: number) {
+    this.videos.update(videos => videos.map(v =>
+      v.relativePath === relativePath
+        ? { ...v, label: { topLabel, confidence } }
+        : v
+    ));
   }
 
   selectVideo(video: VideoItem) {

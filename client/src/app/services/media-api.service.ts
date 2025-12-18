@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { VideoItem } from '../models/media.model';
+import { VideoItem, AiLabel } from '../models/media.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -30,5 +30,13 @@ export class MediaApiService {
 
   buildThumbnailUrl(relativePath: string, width = 240, mode: 'middle' | 'start' = 'middle'): string {
     return `${this.apiUrl}/videos/thumbnail?path=${encodeURIComponent(relativePath)}&w=${width}&mode=${mode}`;
+  }
+
+  getLabel(relativePath: string): Observable<AiLabel> {
+    return this.http.get<AiLabel>(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`);
+  }
+
+  triggerLabel(relativePath: string): Observable<AiLabel | { status: string }> {
+    return this.http.post<AiLabel | { status: string }>(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`, {});
   }
 }

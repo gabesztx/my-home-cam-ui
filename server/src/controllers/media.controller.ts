@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { mediaScannerService } from '../services/mediaScanner.service';
 import { thumbnailService } from '../services/thumbnail.service';
+import { aiLabelerService } from '../services/aiLabeler.service';
+import { config } from '../config/env';
 import fs from 'fs';
 import path from 'path';
 
@@ -124,6 +126,81 @@ export class MediaController {
       if (error instanceof Error && error.message.includes('Path traversal')) {
         return res.status(403).json({ error: error.message });
       }
+      next(error);
+    }
+  }
+
+  async getLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI_DISABLED' });
+      }
+
+      const label = await aiLabelerService.getLabel(relativePath);
+      if (label) {
+        return res.json(label);
+      }
+
+      if (aiLabelerService.isProcessing(relativePath)) {
+        return res.status(202).json({ status: 'processing' });
+      }
+
+      // Ellenőrizzük, hogy létezik-e a fájl
+      try {
+        mediaScannerService.getSafePath(relativePath);
+      } catch (err) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+
+      return res.status(404).json({ error: 'Label not found. POST to trigger processing.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async triggerLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI_DISABLED' });
+      }
+
+      const label = await aiLabelerService.getLabel(relativePath);
+      if (label) {
+        return res.json(label);
+      }
+
+      if (aiLabelerService.isProcessing(relativePath)) {
+        return res.status(202).json({ status: 'processing' });
+      }
+
+      // Ellenőrizzük, hogy létezik-e a fájl
+      let absolutePath: string;
+      try {
+        absolutePath = mediaScannerService.getSafePath(relativePath);
+        if (!fs.existsSync(absolutePath)) {
+          return res.status(404).json({ error: 'Video not found' });
+        }
+      } catch (err) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+
+      // Trigger processing in background (don't await)
+      aiLabelerService.labelVideo(relativePath).catch(err => {
+        console.error(`Error processing video ${relativePath}:`, err);
+      });
+
+      return res.status(202).json({ status: 'processing' });
+    } catch (error) {
       next(error);
     }
   }

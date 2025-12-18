@@ -165,6 +165,33 @@
           color: #0066ff;
         }
 
+        .label-container {
+          margin: 2px 0;
+          display: flex;
+          gap: 4px;
+
+          .badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: #eee;
+            color: #666;
+
+            &.ember { background: #e3f2fd; color: #1565c0; }
+            &.állat { background: #f1f8e9; color: #2e7d32; }
+            &.jármű { background: #fff3e0; color: #ef6c00; }
+            &.ismeretlen { background: #f5f5f5; color: #757575; }
+            &.analyzing {
+              background: #fafafa;
+              color: #999;
+              font-style: italic;
+              border: 1px dashed #ccc;
+            }
+          }
+        }
+
         .filename {
           font-size: 0.8rem;
           color: #888;
