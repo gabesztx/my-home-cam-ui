@@ -51,6 +51,33 @@ npm run start
 
 Production módban az Express szerver szolgálja ki az Angular buildet a `/` útvonalon, és az API-t a `/api` útvonalon. SPA fallback támogatott (minden nem API útvonal az `index.html`-re irányít).
 
+## Környezeti változók (ENV)
+
+A szerver konfigurációja környezeti változókon keresztül történik. A `server/` mappában találhatóak az alábbi fájlok:
+- `.env.development`: Fejlesztői környezet (macOS/Windows)
+- `.env.production`: Éles környezet (Ubuntu)
+- `.env.example`: Példa fájl, ami git-be kerül
+
+### MEDIA_ROOT beállítása
+A `MEDIA_ROOT` egy **abszolút útvonal** kell, hogy legyen, ahol a kamera videók találhatóak.
+
+**macOS példa (.env.development):**
+```
+NODE_ENV=development
+PORT=3000
+MEDIA_ROOT=/Users/felhasznalonev/Downloads/camera
+```
+
+**Ubuntu példa (.env.production):**
+```
+NODE_ENV=production
+PORT=3000
+MEDIA_ROOT=/home/gabesz/share/camera
+```
+
+*Fontos: Ha a megadott útvonal nem létezik, a szerver hibaüzenettel leáll.*
+
 ## API Végpontok
 
 - `GET /api/health`: Ellenőrzi a szerver állapotát. Visszatérési érték: `{ "ok": true, "ts": "<ISO timestamp>" }`
+- `GET /api/debug/media-root` (csak dev módban): Visszaadja a feloldott `MEDIA_ROOT` útvonalat.
