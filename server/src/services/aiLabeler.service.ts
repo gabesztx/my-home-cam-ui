@@ -55,7 +55,17 @@ export class AiLabelerService {
       if (!existsSync(config.aiModelPath)) {
         throw new Error(`Model file not found at ${config.aiModelPath}`);
       }
-      console.log(`Loading ONNX model from: ${config.aiModelPath}`);
+      
+      const stats = await fs.stat(config.aiModelPath);
+      console.log(`Loading ONNX model from: ${config.aiModelPath} (Size: ${stats.size} bytes)`);
+      
+      if (stats.size < 1000) {
+        const content = await fs.readFile(config.aiModelPath, 'utf8');
+        if (content.includes('version https://git-lfs.github.com/spec/v1')) {
+          throw new Error('Model file is a Git LFS pointer, not the actual binary. Please run "git lfs pull".');
+        }
+      }
+
       this.session = await ort.InferenceSession.create(config.aiModelPath, {
         executionProviders: ['cpu'],
         logSeverityLevel: 3 // Only errors

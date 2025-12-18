@@ -8,13 +8,20 @@
     </div>
   }
 
-  @if (aiStatus()?.enabled && !aiStatus()?.modelExists) {
-    <div class="warning-banner ai-model-warning">
-      <strong>AI Figyelmeztetés:</strong> Az AI engedélyezve van, de a modell fájl hiányzik:
-      <code>{{ aiStatus()?.modelPath }}</code>
-      <br>
-      Kérjük, töltse le a modellt a szerverre a funkció használatához.
-    </div>
+  @if (aiStatus()?.enabled) {
+    @if (!aiStatus()?.modelExists) {
+      <div class="warning-banner ai-model-warning">
+        <strong>AI Figyelmeztetés:</strong> Az AI engedélyezve van, de a modell fájl hiányzik:
+        <code>{{ aiStatus()?.modelPath }}</code>
+        <br>
+        Kérjük, töltse le a modellt a szerverre a funkció használatához.
+      </div>
+    } @else if (aiStatus()?.isLfs) {
+      <div class="error-banner">
+        <strong>AI Hiba:</strong> A modell fájl létezik, de úgy tűnik, csak egy Git LFS mutató (pointer), nem a valódi bináris fájl.
+        Kérjük, futtassa a <code>git lfs pull</code> parancsot vagy töltse le manuálisan a valódi modellt.
+      </div>
+    }
   }
 
   <div class="controls">
@@ -85,7 +92,9 @@
                 } @else if (analyzing()[video.relativePath]) {
                   <span class="badge analyzing">Analyzing...</span>
                 } @else if (aiErrors()[video.relativePath]) {
-                  <span class="badge error" (click)="$event.stopPropagation(); triggerAnalysis(video.relativePath)" title="Kattints az újrapróbáláshoz">
+                  <span class="badge error"
+                        (click)="$event.stopPropagation(); triggerAnalysis(video.relativePath)"
+                        [title]="aiDetails()[video.relativePath] || 'Kattints az újrapróbáláshoz'">
                     {{ aiErrors()[video.relativePath] }}
                   </span>
                 }

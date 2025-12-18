@@ -19,6 +19,7 @@ export class MediaBrowserComponent {
   videos = signal<VideoItem[]>([]);
   analyzing = signal<Record<string, boolean>>({});
   aiErrors = signal<Record<string, string>>({});
+  aiDetails = signal<Record<string, string>>({});
 
   selectedCamera = signal<string | null>(null);
   selectedDate = signal<string | null>(null);
@@ -26,7 +27,7 @@ export class MediaBrowserComponent {
 
   loading = signal(false);
   error = signal<string | null>(null);
-  aiStatus = signal<{ enabled: boolean; modelExists: boolean; modelPath: string } | null>(null);
+  aiStatus = signal<{ enabled: boolean; modelExists: boolean; modelPath: string; modelSize: number; isLfs: boolean } | null>(null);
 
   thumbnailStates = signal<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
@@ -130,6 +131,11 @@ export class MediaBrowserComponent {
       delete newState[relativePath];
       return newState;
     });
+    this.aiDetails.update(state => {
+      const newState = { ...state };
+      delete newState[relativePath];
+      return newState;
+    });
 
     this.analyzing.update(state => ({ ...state, [relativePath]: true }));
 
@@ -168,7 +174,8 @@ export class MediaBrowserComponent {
     this.mediaApi.getLabel(relativePath).subscribe({
       next: (label) => {
         if (label.error) {
-          this.aiErrors.update(state => ({ ...state, [relativePath]: label.error || 'AI Error' }));
+          this.aiErrors.update(state => ({ ...state, [relativePath]: 'Error' }));
+          this.aiDetails.update(state => ({ ...state, [relativePath]: label.error || 'AI Error' }));
           this.analyzing.update(state => ({ ...state, [relativePath]: false }));
         } else {
           this.updateVideoLabel(relativePath, label.topLabel, label.confidence);

@@ -40,7 +40,7 @@ export class MediaApiService {
     return this.http.post<AiLabel | { status: string }>(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`, {});
   }
 
-  getAiStatus(): Observable<{ enabled: boolean; modelExists: boolean; modelPath: string }> {
-    return this.http.get<{ enabled: boolean; modelExists: boolean; modelPath: string }>(`${this.apiUrl}/ai-status`);
+  getAiStatus(): Observable<{ enabled: boolean; modelExists: boolean; modelPath: string; modelSize: number; isLfs: boolean }> {
+    return this.http.get<{ enabled: boolean; modelExists: boolean; modelPath: string; modelSize: number; isLfs: boolean }>(`${this.apiUrl}/ai-status`);
   }
 }

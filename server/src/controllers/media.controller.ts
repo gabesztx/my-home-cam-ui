@@ -218,10 +218,30 @@ export class MediaController {
 
   async getAiStatus(req: Request, res: Response, next: NextFunction) {
     try {
+      const modelPath = config.aiModelPath;
+      const exists = fs.existsSync(modelPath);
+      let size = 0;
+      let isLfs = false;
+
+      if (exists) {
+        const stats = fs.statSync(modelPath);
+        size = stats.size;
+        
+        // Check if it's likely a Git LFS pointer (very small text file)
+        if (size < 1000) {
+          const content = fs.readFileSync(modelPath, 'utf8');
+          if (content.includes('version https://git-lfs.github.com/spec/v1')) {
+            isLfs = true;
+          }
+        }
+      }
+
       res.json({
         enabled: config.aiEnabled,
-        modelExists: fs.existsSync(config.aiModelPath),
-        modelPath: config.aiModelPath
+        modelExists: exists,
+        modelPath: modelPath,
+        modelSize: size,
+        isLfs: isLfs
       });
     } catch (error) {
       next(error);
