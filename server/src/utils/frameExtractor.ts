@@ -7,7 +7,7 @@ export async function extractFrameToTempJpg(
   width: number = 640,
   mode: 'middle' | 'start' = 'middle'
 ): Promise<string> {
-  const tempDir = path.resolve(__dirname, '../../../server/.cache/tmp');
+  const tempDir = path.resolve(process.cwd(), '.cache/tmp');
   
   if (!existsSync(tempDir)) {
     await fs.mkdir(tempDir, { recursive: true });

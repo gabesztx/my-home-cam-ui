@@ -20,7 +20,7 @@ export interface AiLabel {
 export class AiLabelerService {
   private session: ort.InferenceSession | null = null;
   private classes: string[] = [];
-  private readonly cacheDir = path.resolve(__dirname, '../../../server/.cache/labels');
+  private readonly cacheDir = path.resolve(process.cwd(), '.cache/labels');
   private readonly locks = new Map<string, Promise<AiLabel>>();
 
   constructor() {
