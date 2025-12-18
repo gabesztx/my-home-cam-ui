@@ -13,6 +13,7 @@ const app = express();
 // Middlewares
 app.use(helmet({
   contentSecurityPolicy: false, // Angular fix for production
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 app.use(compression());
 const corsOptions = {
