@@ -15,6 +15,7 @@ export interface AiLabel {
   confidence: number;
   objects: { class: string; confidence: number; box: number[] }[];
   createdAt: string;
+  error?: string;
 }
 
 export class AiLabelerService {
@@ -86,7 +87,9 @@ export class AiLabelerService {
     if (!config.aiEnabled) throw new Error('AI_DISABLED');
 
     const cached = await this.getLabel(relativePath);
-    if (cached) return cached;
+    // Ha van cache és nincs benne hiba, adjuk vissza.
+    // Ha van benne hiba, engedjük újra próbálni (hátha javították a modellt).
+    if (cached && !cached.error) return cached;
 
     const lock = this.locks.get(relativePath);
     if (lock) return lock;
@@ -104,9 +107,10 @@ export class AiLabelerService {
 
   private async processVideo(relativePath: string): Promise<AiLabel> {
     const fullPath = mediaScannerService.getSafePath(relativePath);
-    const tempFrame = await extractFrameToTempJpg(fullPath, config.aiFrameWidth, config.aiFrameMode as any);
+    let tempFrame: string | null = null;
     
     try {
+      tempFrame = await extractFrameToTempJpg(fullPath, config.aiFrameWidth, config.aiFrameMode as any);
       const session = await this.loadModel();
       
       // Image preprocessing
@@ -127,7 +131,6 @@ export class AiLabelerService {
       const output = outputs[Object.keys(outputs)[0]];
 
       // YOLO v8/v11 postprocessing (simplified)
-      // output shape is usually [1, 84, 8400] or similar
       const detections = this.parseYoloOutput(output.data as Float32Array, output.dims as number[]);
       
       const objects = detections
@@ -154,18 +157,40 @@ export class AiLabelerService {
       console.log(`Video processed: ${relativePath}, found: ${labels.join(', ') || 'NOTHING'}`);
 
       // Cache result
-      if (!existsSync(this.cacheDir)) {
-        await fs.mkdir(this.cacheDir, { recursive: true });
-      }
-      await fs.writeFile(this.getCachePath(relativePath), JSON.stringify(result, null, 2));
+      await this.saveToCache(relativePath, result);
 
       return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`Error processing video ${relativePath}:`, err);
+      
+      const errorResult: AiLabel = {
+        relativePath,
+        labels: [],
+        topLabel: 'ERROR',
+        confidence: 0,
+        objects: [],
+        createdAt: new Date().toISOString(),
+        error: errorMsg
+      };
+
+      // Mentjük a hibát is a cache-be, hogy ne próbálkozzon újra végtelenül
+      await this.saveToCache(relativePath, errorResult).catch(() => {});
+      
+      return errorResult;
     } finally {
       // Cleanup temp frame
-      if (existsSync(tempFrame)) {
+      if (tempFrame && existsSync(tempFrame)) {
         await fs.unlink(tempFrame).catch(() => {});
       }
     }
+  }
+
+  private async saveToCache(relativePath: string, result: AiLabel) {
+    if (!existsSync(this.cacheDir)) {
+      await fs.mkdir(this.cacheDir, { recursive: true });
+    }
+    await fs.writeFile(this.getCachePath(relativePath), JSON.stringify(result, null, 2));
   }
 
   private parseYoloOutput(data: Float32Array, dims: number[]) {

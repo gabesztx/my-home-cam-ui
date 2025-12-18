@@ -125,6 +125,12 @@ export class MediaBrowserComponent {
   triggerAnalysis(relativePath: string) {
     if (this.analyzing()[relativePath]) return;
 
+    this.aiErrors.update(state => {
+      const newState = { ...state };
+      delete newState[relativePath];
+      return newState;
+    });
+
     this.analyzing.update(state => ({ ...state, [relativePath]: true }));
 
     this.mediaApi.triggerLabel(relativePath).subscribe({
@@ -161,8 +167,13 @@ export class MediaBrowserComponent {
 
     this.mediaApi.getLabel(relativePath).subscribe({
       next: (label) => {
-        this.updateVideoLabel(relativePath, label.topLabel, label.confidence);
-        this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+        if (label.error) {
+          this.aiErrors.update(state => ({ ...state, [relativePath]: label.error || 'AI Error' }));
+          this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+        } else {
+          this.updateVideoLabel(relativePath, label.topLabel, label.confidence);
+          this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+        }
       },
       error: (err) => {
         // Ha 202 (Processing), akkor folytatjuk a pollingot

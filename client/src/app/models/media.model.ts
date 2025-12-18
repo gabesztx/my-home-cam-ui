@@ -15,4 +15,5 @@ export interface AiLabel {
   confidence: number;
   objects: { class: string; confidence: number; box: number[] }[];
   createdAt: string;
+  error?: string;
 }
