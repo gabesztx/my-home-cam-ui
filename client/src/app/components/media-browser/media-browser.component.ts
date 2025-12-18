@@ -33,6 +33,14 @@ export class MediaBrowserComponent {
     return video ? this.mediaApi.buildStreamUrl(video.relativePath) : null;
   });
 
+  videosWithLabelInfo = computed(() => {
+    return this.videos().map(video => ({
+      ...video,
+      labelBadgeClass: video.label ? this.mediaApi.getLabelBadgeClass(video.label.topLabel) : '',
+      labelText: video.label ? this.mediaApi.getLabelText(video.label.topLabel) : ''
+    }));
+  });
+
   constructor() {
     this.loadCameras();
   }
@@ -202,14 +210,6 @@ export class MediaBrowserComponent {
       });
   }
 
-  getLabelBadgeClass(label: string): string {
-    return this.mediaApi.getLabelBadgeClass(label);
-  }
-
-  getLabelText(label: string): string {
-    return this.mediaApi.getLabelText(label);
-  }
-
   refreshLabels() {
     const videos = this.videos();
     if (videos.length === 0) return;
@@ -218,7 +218,30 @@ export class MediaBrowserComponent {
     const date = this.selectedDate();
 
     if (cameraId && date) {
-      this.loadVideos(cameraId, date);
+      // Reload videos from server to get updated labels
+      this.loading.set(true);
+      this.error.set(null);
+      this.mediaApi.getVideos(cameraId, date)
+        .pipe(
+          catchError(err => {
+            this.error.set('Hiba a videók betöltésekor');
+            return of([]);
+          }),
+          finalize(() => this.loading.set(false))
+        )
+        .subscribe(videos => {
+          // Preserve existing thumbnail states to avoid re-loading thumbnails
+          const currentStates = this.thumbnailStates();
+          const updatedStates: Record<string, 'loading' | 'loaded' | 'error'> = {};
+
+          videos.forEach(v => {
+            // Keep existing state if available, otherwise set to loading
+            updatedStates[v.relativePath] = currentStates[v.relativePath] || 'loading';
+          });
+
+          this.thumbnailStates.set(updatedStates);
+          this.videos.set(videos);
+        });
     }
   }
 }

@@ -46,44 +46,44 @@
       }
 
       <ul class="video-list">
-        @for (video of videos(); track video.relativePath) {
+        @for (videoWithInfo of videosWithLabelInfo(); track videoWithInfo.relativePath) {
           <li
-            [class.selected]="selectedVideo()?.file === video.file"
-            (click)="selectVideo(video)"
+            [class.selected]="selectedVideo()?.file === videoWithInfo.file"
+            (click)="selectVideo(videoWithInfo)"
           >
             <div class="thumbnail-container">
-              @if (thumbnailStates()[video.relativePath] === 'loading') {
+              @if (thumbnailStates()[videoWithInfo.relativePath] === 'loading') {
                 <div class="thumbnail-overlay">
                   <div class="spinner"></div>
                 </div>
               }
-              @if (thumbnailStates()[video.relativePath] === 'error') {
+              @if (thumbnailStates()[videoWithInfo.relativePath] === 'error') {
                 <div class="thumbnail-overlay error">
                   <span class="error-text">Nincs előnézet</span>
                 </div>
               }
               <img
-                [src]="getThumbnailUrl(video.relativePath)"
-                [class.visible]="thumbnailStates()[video.relativePath] === 'loaded'"
+                [src]="getThumbnailUrl(videoWithInfo.relativePath)"
+                [class.visible]="thumbnailStates()[videoWithInfo.relativePath] === 'loaded'"
                 loading="lazy"
                 alt="Előnézet"
-                (load)="onThumbnailLoad(video.relativePath)"
-                (error)="onThumbnailError(video.relativePath)"
+                (load)="onThumbnailLoad(videoWithInfo.relativePath)"
+                (error)="onThumbnailError(videoWithInfo.relativePath)"
               >
             </div>
             <div class="video-info">
-              <span class="time">{{ video.time }}</span>
-              <span class="filename">{{ video.file }}</span>
-              @if (video.label) {
-                <span class="label-badge" [ngClass]="getLabelBadgeClass(video.label.topLabel)">
-                  {{ getLabelText(video.label.topLabel) }}
+              <span class="time">{{ videoWithInfo.time }}</span>
+              <span class="filename">{{ videoWithInfo.file }}</span>
+              @if (videoWithInfo.label) {
+                <span [class]="'label-badge ' + videoWithInfo.labelBadgeClass">
+                  {{ videoWithInfo.labelText }}
                 </span>
-              } @else if (labelStates()[video.relativePath] === 'analyzing') {
+              } @else if (labelStates()[videoWithInfo.relativePath] === 'analyzing') {
                 <span class="label-badge badge-analyzing" (click)="$event.stopPropagation()">
                   Analyzing...
                 </span>
               } @else {
-                <span class="label-badge badge-trigger" (click)="triggerLabelIfNeeded(video); $event.stopPropagation()">
+                <span class="label-badge badge-trigger" (click)="triggerLabelIfNeeded(videoWithInfo); $event.stopPropagation()">
                   Analyze
                 </span>
               }
