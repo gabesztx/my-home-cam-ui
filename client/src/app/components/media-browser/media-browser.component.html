@@ -34,7 +34,12 @@
 
   <div class="main-content">
     <div class="video-list-section">
-      <h3>Videók @if (loading()) { <span class="loading-spinner">...</span> }</h3>
+      <div class="video-list-header">
+        <h3>Videók @if (loading()) { <span class="loading-spinner">...</span> }</h3>
+        @if (videos().length > 0) {
+          <button class="refresh-labels-btn" (click)="refreshLabels()">Refresh labels</button>
+        }
+      </div>
 
       @if (selectedDate() && videos().length === 0 && !loading()) {
         <p>Nincs videó ezen a napon.</p>
@@ -69,6 +74,19 @@
             <div class="video-info">
               <span class="time">{{ video.time }}</span>
               <span class="filename">{{ video.file }}</span>
+              @if (video.label) {
+                <span class="label-badge" [ngClass]="getLabelBadgeClass(video.label.topLabel)">
+                  {{ getLabelText(video.label.topLabel) }}
+                </span>
+              } @else if (labelStates()[video.relativePath] === 'analyzing') {
+                <span class="label-badge badge-analyzing" (click)="$event.stopPropagation()">
+                  Analyzing...
+                </span>
+              } @else {
+                <span class="label-badge badge-trigger" (click)="triggerLabelIfNeeded(video); $event.stopPropagation()">
+                  Analyze
+                </span>
+              }
             </div>
           </li>
         }

@@ -63,6 +63,41 @@
   flex-direction: column;
   overflow: hidden;
 
+  .video-list-header {
+    padding: 15px;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .refresh-labels-btn {
+      padding: 6px 12px;
+      background-color: #0066ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #0052cc;
+      }
+
+      &:active {
+        background-color: #003d99;
+      }
+    }
+  }
+
   h3 {
     margin: 0;
     padding: 15px;
@@ -172,6 +207,55 @@
           overflow: hidden;
           text-overflow: ellipsis;
         }
+
+        .label-badge {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          text-transform: uppercase;
+          margin-top: 4px;
+          align-self: flex-start;
+          cursor: default;
+
+          &.badge-person {
+            background-color: #4CAF50;
+            color: white;
+          }
+
+          &.badge-animal {
+            background-color: #FF9800;
+            color: white;
+          }
+
+          &.badge-car {
+            background-color: #2196F3;
+            color: white;
+          }
+
+          &.badge-unknown {
+            background-color: #9E9E9E;
+            color: white;
+          }
+
+          &.badge-analyzing {
+            background-color: #FFC107;
+            color: #333;
+            animation: pulse 1.5s ease-in-out infinite;
+          }
+
+          &.badge-trigger {
+            background-color: #E0E0E0;
+            color: #555;
+            cursor: pointer;
+            transition: background-color 0.2s;
+
+            &:hover {
+              background-color: #BDBDBD;
+            }
+          }
+        }
       }
     }
   }
@@ -226,4 +310,13 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }

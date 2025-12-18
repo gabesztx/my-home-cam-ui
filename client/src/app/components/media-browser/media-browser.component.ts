@@ -26,6 +26,7 @@ export class MediaBrowserComponent {
   error = signal<string | null>(null);
 
   thumbnailStates = signal<Record<string, 'loading' | 'loaded' | 'error'>>({});
+  labelStates = signal<Record<string, 'analyzing' | 'done' | 'error'>>({});
 
   videoUrl = computed(() => {
     const video = this.selectedVideo();
@@ -129,5 +130,61 @@ export class MediaBrowserComponent {
       ...states,
       [relativePath]: 'error'
     }));
+  }
+
+  triggerLabelIfNeeded(video: VideoItem) {
+    // If label already exists, do nothing
+    if (video.label) {
+      this.labelStates.update(states => ({
+        ...states,
+        [video.relativePath]: 'done'
+      }));
+      return;
+    }
+
+    // If already analyzing or error, do nothing
+    const currentState = this.labelStates()[video.relativePath];
+    if (currentState === 'analyzing' || currentState === 'error') {
+      return;
+    }
+
+    // Set analyzing state
+    this.labelStates.update(states => ({
+      ...states,
+      [video.relativePath]: 'analyzing'
+    }));
+
+    // Trigger label request
+    this.mediaApi.triggerLabel(video.relativePath)
+      .pipe(
+        catchError(err => {
+          this.labelStates.update(states => ({
+            ...states,
+            [video.relativePath]: 'error'
+          }));
+          return of(null);
+        })
+      )
+      .subscribe();
+  }
+
+  getLabelBadgeClass(label: string): string {
+    return this.mediaApi.getLabelBadgeClass(label);
+  }
+
+  getLabelText(label: string): string {
+    return this.mediaApi.getLabelText(label);
+  }
+
+  refreshLabels() {
+    const videos = this.videos();
+    if (videos.length === 0) return;
+
+    const cameraId = this.selectedCamera();
+    const date = this.selectedDate();
+
+    if (cameraId && date) {
+      this.loadVideos(cameraId, date);
+    }
   }
 }

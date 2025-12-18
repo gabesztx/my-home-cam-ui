@@ -31,4 +31,31 @@ export class MediaApiService {
   buildThumbnailUrl(relativePath: string, width = 240, mode: 'middle' | 'start' = 'middle'): string {
     return `${this.apiUrl}/videos/thumbnail?path=${encodeURIComponent(relativePath)}&w=${width}&mode=${mode}`;
   }
+
+  getLabel(relativePath: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`);
+  }
+
+  triggerLabel(relativePath: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/videos/labels?path=${encodeURIComponent(relativePath)}`, {});
+  }
+
+  getLabelBadgeClass(label: string): string {
+    switch (label) {
+      case 'EMBER':
+        return 'badge-person';
+      case 'ÁLLAT':
+        return 'badge-animal';
+      case 'KOCSI':
+        return 'badge-car';
+      case 'ISMERETLEN':
+        return 'badge-unknown';
+      default:
+        return 'badge-unknown';
+    }
+  }
+
+  getLabelText(label: string): string {
+    return label || 'ISMERETLEN';
+  }
 }

@@ -28,4 +28,7 @@ export const config = {
   nodeEnv,
   port: parseInt(process.env.PORT || '3000', 10),
   mediaRoot: resolvedMediaRoot,
+  aiEnabled: process.env.AI_ENABLED === 'true',
+  aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:8001',
+  aiConfidence: parseFloat(process.env.AI_CONFIDENCE || '0.55'),
 };

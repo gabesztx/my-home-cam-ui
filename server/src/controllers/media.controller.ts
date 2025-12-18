@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { mediaScannerService } from '../services/mediaScanner.service';
 import { thumbnailService } from '../services/thumbnail.service';
+import { aiLabelService } from '../services/aiLabel.service';
+import { config } from '../config/env';
 import fs from 'fs';
 import path from 'path';
 
@@ -124,6 +126,69 @@ export class MediaController {
       if (error instanceof Error && error.message.includes('Path traversal')) {
         return res.status(403).json({ error: error.message });
       }
+      next(error);
+    }
+  }
+
+  async getLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      // Check if AI is enabled
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI service is disabled' });
+      }
+
+      // Get cached label
+      const cachedLabel = await aiLabelService.getCachedLabel(relativePath);
+
+      if (cachedLabel) {
+        return res.json(cachedLabel);
+      }
+
+      // No cache found
+      return res.status(404).json({ error: 'Label not found in cache' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async triggerLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      // Check if AI is enabled
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI service is disabled' });
+      }
+
+      // Check if label already exists in cache
+      const cachedLabel = await aiLabelService.getCachedLabel(relativePath);
+      if (cachedLabel) {
+        return res.json(cachedLabel);
+      }
+
+      // Check if ffmpeg is available
+      if (!(await aiLabelService.isFfmpegAvailable())) {
+        return res.status(503).json({ error: 'ffmpeg not available' });
+      }
+
+      // Trigger label request (async, with single-flight protection)
+      // Don't await - return 202 immediately
+      aiLabelService.requestLabel(relativePath).catch(error => {
+        console.error(`Label request failed for ${relativePath}:`, error);
+      });
+
+      return res.status(202).json({ status: 'processing' });
+    } catch (error) {
       next(error);
     }
   }

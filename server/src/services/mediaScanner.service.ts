@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config/env';
 import { VideoItem } from '../dto/media.dto';
+import { aiLabelService } from './aiLabel.service';
 
 export class MediaScannerService {
   private readonly mediaRoot = config.mediaRoot;
@@ -42,6 +43,26 @@ export class MediaScannerService {
         };
       })
       .sort((a, b) => a.file.localeCompare(b.file));
+
+    // Add label cache if AI is enabled
+    if (config.aiEnabled) {
+      const videosWithLabels = await Promise.all(
+        videos.map(async (video) => {
+          const cachedLabel = await aiLabelService.getCachedLabel(video.relativePath);
+          if (cachedLabel) {
+            return {
+              ...video,
+              label: {
+                topLabel: cachedLabel.topLabel,
+                confidence: cachedLabel.confidence,
+              },
+            };
+          }
+          return video;
+        })
+      );
+      return videosWithLabels;
+    }
 
     return videos;
   }
