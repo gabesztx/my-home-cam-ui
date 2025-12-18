@@ -51,7 +51,8 @@ export class MediaController {
       }
 
       if (!(await thumbnailService.isFfmpegAvailable())) {
-        return res.status(500).json({ error: 'ffmpeg not available' });
+        console.warn('ffmpeg not available, thumbnail generation skipped');
+        return res.status(404).json({ error: 'ffmpeg not available' });
       }
 
       const { filePath, contentType } = await thumbnailService.getThumbnail(relativePath, width, mode);
@@ -68,7 +69,8 @@ export class MediaController {
           return res.status(400).json({ error: error.message });
         }
         if (error.message.includes('Thumbnail generation failed')) {
-          return res.status(500).json({ error: error.message });
+          console.error('Thumbnail generation failed:', error);
+          return res.status(404).json({ error: 'Thumbnail generation failed' });
         }
       }
       next(error);

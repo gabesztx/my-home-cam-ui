@@ -110,7 +110,10 @@ export class MediaBrowserComponent {
 
   handleImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    img.src = 'assets/no-preview.png'; // Fallback icon/image
+    if (img.src.includes('data:image/svg+xml')) return;
+
+    // SVG placeholder: szürke téglalap egy áthúzott kamera ikonnal vagy szöveggel
+    img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="68" viewBox="0 0 120 68"%3E%3Crect width="120" height="68" fill="%23eee"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%23999"%3ENo Preview%3C/text%3E%3C/svg%3E';
     img.classList.add('error');
   }
 }
