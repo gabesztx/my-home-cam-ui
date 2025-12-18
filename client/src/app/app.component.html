@@ -1,0 +1,28 @@
+<main class="container">
+  <h1>Angular Express Starter</h1>
+
+  <section class="card">
+    <h2>Backend Health Check</h2>
+
+    <div class="actions">
+      <button (click)="checkHealth()" [disabled]="loading()" aria-live="polite">
+        {{ loading() ? 'Checking...' : 'Check Health' }}
+      </button>
+    </div>
+
+    @if (loading()) {
+      <p class="status-loading" role="status">Fetching data from server...</p>
+    }
+
+    @if (error()) {
+      <p class="status-error" role="alert">{{ error() }}</p>
+    }
+
+    @if (healthStatus(); as status) {
+      <div class="result" aria-live="polite">
+        <p><strong>Status:</strong> {{ status.ok ? '✅ OK' : '❌ Failed' }}</p>
+        <p><strong>Timestamp:</strong> {{ status.ts }}</p>
+      </div>
+    }
+  </section>
+</main>
