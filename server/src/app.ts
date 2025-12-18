@@ -18,7 +18,7 @@ app.use(helmet({
 app.use(compression());
 const corsOptions = {
   origin: 'http://localhost:4200',
-  methods: ['GET', 'OPTIONS'],
+  methods: ['GET', 'POST', 'OPTIONS'],
   credentials: false,
   allowedHeaders: ['Content-Type', 'Range'],
   exposedHeaders: ['Accept-Ranges', 'Content-Range', 'Content-Length']

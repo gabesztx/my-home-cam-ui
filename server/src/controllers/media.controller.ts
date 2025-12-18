@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { mediaScannerService } from '../services/mediaScanner.service';
 import { thumbnailService } from '../services/thumbnail.service';
+import { aiLabelService } from '../services/aiLabel.service';
+import { config } from '../config/env';
 import fs from 'fs';
 import path from 'path';
 
@@ -31,10 +33,95 @@ export class MediaController {
     try {
       const { cameraId, date } = req.params;
       const videos = await mediaScannerService.listVideos(cameraId, date);
-      res.json(videos);
+
+      const videosWithLabels = await Promise.all(
+        videos.map(async (video) => {
+          const cached = await aiLabelService.getCachedLabel(video.relativePath);
+          if (!cached) return video;
+
+          return {
+            ...video,
+            label: {
+              topLabel: cached.topLabel,
+              confidence: cached.confidence,
+            },
+          };
+        })
+      );
+
+      res.json(videosWithLabels);
     } catch (error) {
       if (error instanceof Error && error.message.includes('Invalid')) {
         return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async getVideoLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI_DISABLED' });
+      }
+
+      const cached = await aiLabelService.getCachedLabel(relativePath);
+      if (!cached) {
+        return res.status(404).json({ error: 'NOT_LABELED' });
+      }
+
+      res.json(cached);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Path traversal')) {
+        return res.status(403).json({ error: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async triggerVideoLabel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      if (!config.aiEnabled) {
+        return res.status(503).json({ error: 'AI_DISABLED' });
+      }
+
+      // If already cached, return immediately
+      const cached = await aiLabelService.getCachedLabel(relativePath);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      try {
+        const record = await aiLabelService.requestLabelQuick(relativePath, 1500);
+        return res.json(record);
+      } catch (err) {
+        if (aiLabelService.isAiDisabledError(err)) {
+          return res.status(503).json({ error: 'AI_DISABLED' });
+        }
+        if (aiLabelService.isAiServiceUnavailableError(err)) {
+          return res.status(502).json({ error: 'AI_SERVICE_UNAVAILABLE' });
+        }
+        if (err instanceof Error && err.message === 'TIMEOUT') {
+          // fire-and-forget (still single-flight)
+          aiLabelService.requestLabel(relativePath).catch((e) => {
+            console.error('AI labeling failed:', e);
+          });
+          return res.status(202).json({ status: 'processing' });
+        }
+        throw err;
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Path traversal')) {
+        return res.status(403).json({ error: error.message });
       }
       next(error);
     }
