@@ -85,3 +85,10 @@ MEDIA_ROOT=/home/gabesz/share/camera
 - `GET /api/cameras/:cameraId/dates`: Kamera dátumainak listája (csökkenő sorrendben).
 - `GET /api/cameras/:cameraId/dates/:date/videos`: Videók listája egy adott napon.
 - `GET /api/videos/stream?path=<relativePath>`: Videó streamelése (támogatja a Range requesteket).
+- `GET /api/videos/thumbnail?path=<relativePath>&w=<width>&mode=<mode>`: Videó előnézeti kép generálása/lekérése.
+
+## Rendszerkövetelmények (Thumbnail generáláshoz)
+
+A videó előnézeti képek generálásához a szerveren telepítve kell lennie az **ffmpeg** eszköznek.
+- **macOS**: `brew install ffmpeg`
+- **Ubuntu**: `sudo apt update && sudo apt install ffmpeg`

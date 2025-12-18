@@ -46,8 +46,18 @@
             [class.selected]="selectedVideo()?.file === video.file"
             (click)="selectVideo(video)"
           >
-            <span class="time">{{ video.time }}</span>
-            <span class="filename">{{ video.file }}</span>
+            <div class="thumbnail-container">
+              <img
+                [src]="getThumbnailUrl(video.relativePath)"
+                loading="lazy"
+                alt="Előnézet"
+                (error)="handleImageError($event)"
+              >
+            </div>
+            <div class="video-info">
+              <span class="time">{{ video.time }}</span>
+              <span class="filename">{{ video.file }}</span>
+            </div>
           </li>
         }
       </ul>

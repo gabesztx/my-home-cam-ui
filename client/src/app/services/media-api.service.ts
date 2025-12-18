@@ -25,4 +25,8 @@ export class MediaApiService {
   buildStreamUrl(relativePath: string): string {
     return `${this.apiUrl}/videos/stream?path=${encodeURIComponent(relativePath)}`;
   }
+
+  buildThumbnailUrl(relativePath: string, width = 240, mode: 'middle' | 'start' = 'middle'): string {
+    return `${this.apiUrl}/videos/thumbnail?path=${encodeURIComponent(relativePath)}&w=${width}&mode=${mode}`;
+  }
 }

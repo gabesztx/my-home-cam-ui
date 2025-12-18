@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { mediaScannerService } from '../services/mediaScanner.service';
+import { thumbnailService } from '../services/thumbnail.service';
 import fs from 'fs';
 import path from 'path';
 
@@ -34,6 +35,41 @@ export class MediaController {
     } catch (error) {
       if (error instanceof Error && error.message.includes('Invalid')) {
         return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async getThumbnail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const relativePath = req.query.path as string;
+      const width = parseInt(req.query.w as string, 10) || 240;
+      const mode = (req.query.mode as 'middle' | 'start') || 'middle';
+
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path query param is required' });
+      }
+
+      if (!(await thumbnailService.isFfmpegAvailable())) {
+        return res.status(500).json({ error: 'ffmpeg not available' });
+      }
+
+      const { filePath, contentType } = await thumbnailService.getThumbnail(relativePath, width, mode);
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      fs.createReadStream(filePath).pipe(res);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('Path traversal')) {
+          return res.status(403).json({ error: error.message });
+        }
+        if (error.message.includes('Invalid') || error.message.includes('supported')) {
+          return res.status(400).json({ error: error.message });
+        }
+        if (error.message.includes('Thumbnail generation failed')) {
+          return res.status(500).json({ error: error.message });
+        }
       }
       next(error);
     }

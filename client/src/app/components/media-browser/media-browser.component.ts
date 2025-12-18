@@ -103,4 +103,14 @@ export class MediaBrowserComponent {
   selectVideo(video: VideoItem) {
     this.selectedVideo.set(video);
   }
+
+  getThumbnailUrl(relativePath: string): string {
+    return this.mediaApi.buildThumbnailUrl(relativePath);
+  }
+
+  handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.src = 'assets/no-preview.png'; // Fallback icon/image
+    img.classList.add('error');
+  }
 }
