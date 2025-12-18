@@ -75,6 +75,8 @@
                   </span>
                 } @else if (analyzing()[video.relativePath]) {
                   <span class="badge analyzing">Analyzing...</span>
+                } @else if (aiErrors()[video.relativePath]) {
+                  <span class="badge error">{{ aiErrors()[video.relativePath] }}</span>
                 }
               </div>
               <span class="filename">{{ video.file }}</span>

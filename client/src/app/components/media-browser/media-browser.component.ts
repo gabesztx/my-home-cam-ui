@@ -18,6 +18,7 @@ export class MediaBrowserComponent {
   dates = signal<string[]>([]);
   videos = signal<VideoItem[]>([]);
   analyzing = signal<Record<string, boolean>>({});
+  aiErrors = signal<Record<string, string>>({});
 
   selectedCamera = signal<string | null>(null);
   selectedDate = signal<string | null>(null);
@@ -130,7 +131,16 @@ export class MediaBrowserComponent {
           setTimeout(() => this.pollLabel(relativePath), 3000);
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('AI Analysis failed to start:', err);
+        let errorMsg = 'AI Error';
+        if (err.status === 500 && err.error?.error === 'AI_MODEL_ERROR') {
+          errorMsg = 'Model missing';
+        } else if (err.status === 503) {
+          errorMsg = 'AI Off';
+        }
+
+        this.aiErrors.update(state => ({ ...state, [relativePath]: errorMsg }));
         this.analyzing.update(state => ({ ...state, [relativePath]: false }));
       }
     });

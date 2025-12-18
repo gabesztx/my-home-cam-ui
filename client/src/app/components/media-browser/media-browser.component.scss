@@ -189,6 +189,12 @@
               font-style: italic;
               border: 1px dashed #ccc;
             }
+            &.error {
+              background: #ffebee;
+              color: #c62828;
+              font-size: 0.6rem;
+              border: 1px solid #ffcdd2;
+            }
           }
         }
 

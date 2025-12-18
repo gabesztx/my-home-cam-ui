@@ -198,7 +198,11 @@ export class MediaController {
       try {
         await aiLabelerService.validateModel();
       } catch (err) {
-        return res.status(500).json({ error: 'AI model error: ' + (err as Error).message });
+        const errorMsg = (err as Error).message;
+        if (errorMsg === 'AI_DISABLED') {
+          return res.status(503).json({ error: 'AI_DISABLED' });
+        }
+        return res.status(500).json({ error: 'AI_MODEL_ERROR', details: errorMsg });
       }
 
       // Trigger processing in background (don't await)
