@@ -1,0 +1,75 @@
+<div class="media-container">
+  <h1>Média Böngésző</h1>
+
+  @if (error()) {
+    <div class="error-banner">
+      {{ error() }}
+      <button (click)="loadCameras()">Újrapróbálás</button>
+    </div>
+  }
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="camera-select">Kamera:</label>
+      <select id="camera-select" (change)="onCameraChange($event)">
+        <option value="">Válassz kamerát...</option>
+        @for (camera of cameras(); track camera) {
+          <option [value]="camera">{{ camera }}</option>
+        }
+      </select>
+    </div>
+
+    @if (selectedCamera()) {
+      <div class="control-group">
+        <label for="date-select">Dátum:</label>
+        <select id="date-select" (change)="onDateChange($event)">
+          <option value="">Válassz dátumot...</option>
+          @for (date of dates(); track date) {
+            <option [value]="date">{{ date }}</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
+  <div class="main-content">
+    <div class="video-list-section">
+      <h3>Videók @if (loading()) { <span class="loading-spinner">...</span> }</h3>
+
+      @if (selectedDate() && videos().length === 0 && !loading()) {
+        <p>Nincs videó ezen a napon.</p>
+      }
+
+      <ul class="video-list">
+        @for (video of videos(); track video.file) {
+          <li
+            [class.selected]="selectedVideo()?.file === video.file"
+            (click)="selectVideo(video)"
+          >
+            <span class="time">{{ video.time }}</span>
+            <span class="filename">{{ video.file }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="player-section">
+      @if (videoUrl()) {
+        <div class="video-player-container">
+          <h4>{{ selectedVideo()?.time }} - {{ selectedVideo()?.file }}</h4>
+          <video
+            controls
+            autoplay
+            [src]="videoUrl()"
+          >
+            Sajnos a böngésződ nem támogatja a videó lejátszást.
+          </video>
+        </div>
+      } @else {
+        <div class="player-placeholder">
+          <p>Válassz egy videót a listából a lejátszáshoz.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

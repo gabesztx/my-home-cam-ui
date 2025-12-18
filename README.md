@@ -81,3 +81,7 @@ MEDIA_ROOT=/home/gabesz/share/camera
 
 - `GET /api/health`: Ellenőrzi a szerver állapotát. Visszatérési érték: `{ "ok": true, "ts": "<ISO timestamp>" }`
 - `GET /api/debug/media-root` (csak dev módban): Visszaadja a feloldott `MEDIA_ROOT` útvonalat.
+- `GET /api/cameras`: Elérhető kamerák listája.
+- `GET /api/cameras/:cameraId/dates`: Kamera dátumainak listája (csökkenő sorrendben).
+- `GET /api/cameras/:cameraId/dates/:date/videos`: Videók listája egy adott napon.
+- `GET /api/videos/stream?path=<relativePath>`: Videó streamelése (támogatja a Range requesteket).
