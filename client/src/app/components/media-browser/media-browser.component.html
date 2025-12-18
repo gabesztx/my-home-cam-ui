@@ -41,17 +41,29 @@
       }
 
       <ul class="video-list">
-        @for (video of videos(); track video.file) {
+        @for (video of videos(); track video.relativePath) {
           <li
             [class.selected]="selectedVideo()?.file === video.file"
             (click)="selectVideo(video)"
           >
             <div class="thumbnail-container">
+              @if (thumbnailStates()[video.relativePath] === 'loading') {
+                <div class="thumbnail-overlay">
+                  <div class="spinner"></div>
+                </div>
+              }
+              @if (thumbnailStates()[video.relativePath] === 'error') {
+                <div class="thumbnail-overlay error">
+                  <span class="error-text">Nincs előnézet</span>
+                </div>
+              }
               <img
                 [src]="getThumbnailUrl(video.relativePath)"
+                [class.visible]="thumbnailStates()[video.relativePath] === 'loaded'"
                 loading="lazy"
                 alt="Előnézet"
-                (error)="handleImageError($event)"
+                (load)="onThumbnailLoad(video.relativePath)"
+                (error)="onThumbnailError(video.relativePath)"
               >
             </div>
             <div class="video-info">

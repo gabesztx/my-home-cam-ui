@@ -25,6 +25,8 @@ export class MediaBrowserComponent {
   loading = signal(false);
   error = signal<string | null>(null);
 
+  thumbnailStates = signal<Record<string, 'loading' | 'loaded' | 'error'>>({});
+
   videoUrl = computed(() => {
     const video = this.selectedVideo();
     return video ? this.mediaApi.buildStreamUrl(video.relativePath) : null;
@@ -55,6 +57,7 @@ export class MediaBrowserComponent {
     this.selectedVideo.set(null);
     this.dates.set([]);
     this.videos.set([]);
+    this.thumbnailStates.set({});
 
     if (cameraId) {
       this.loadDates(cameraId);
@@ -80,6 +83,7 @@ export class MediaBrowserComponent {
     this.selectedDate.set(date || null);
     this.selectedVideo.set(null);
     this.videos.set([]);
+    this.thumbnailStates.set({});
 
     if (this.selectedCamera() && date) {
       this.loadVideos(this.selectedCamera()!, date);
@@ -97,7 +101,12 @@ export class MediaBrowserComponent {
         }),
         finalize(() => this.loading.set(false))
       )
-      .subscribe(videos => this.videos.set(videos));
+      .subscribe(videos => {
+        const initialStates: Record<string, 'loading' | 'loaded' | 'error'> = {};
+        videos.forEach(v => initialStates[v.relativePath] = 'loading');
+        this.thumbnailStates.set(initialStates);
+        this.videos.set(videos);
+      });
   }
 
   selectVideo(video: VideoItem) {
@@ -108,12 +117,17 @@ export class MediaBrowserComponent {
     return this.mediaApi.buildThumbnailUrl(relativePath);
   }
 
-  handleImageError(event: Event) {
-    const img = event.target as HTMLImageElement;
-    if (img.src.includes('data:image/svg+xml')) return;
+  onThumbnailLoad(relativePath: string) {
+    this.thumbnailStates.update(states => ({
+      ...states,
+      [relativePath]: 'loaded'
+    }));
+  }
 
-    // SVG placeholder: szürke téglalap egy áthúzott kamera ikonnal vagy szöveggel
-    img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="68" viewBox="0 0 120 68"%3E%3Crect width="120" height="68" fill="%23eee"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%23999"%3ENo Preview%3C/text%3E%3C/svg%3E';
-    img.classList.add('error');
+  onThumbnailError(relativePath: string) {
+    this.thumbnailStates.update(states => ({
+      ...states,
+      [relativePath]: 'error'
+    }));
   }
 }
