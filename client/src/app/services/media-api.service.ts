@@ -2,13 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { VideoItem } from '../models/media.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MediaApiService {
   private http = inject(HttpClient);
-  private apiUrl = '/api';
+  private apiBaseUrl = environment.apiBaseUrl;
+  private apiUrl = `${this.apiBaseUrl}/api`;
 
   getCameras(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/cameras`);

@@ -23,56 +23,52 @@ npm install
 
 Ez a parancs automatikusan telepíti a függőségeket a `client` és `server` mappákban is.
 
-## Fejlesztés
+## Üzemeltetési módok
 
-A frontend és a backend párhuzamos futtatásához fejlesztői módban:
+A projekt két fő módban használható:
 
-```bash
-npm run dev
-```
+### A) Fejlesztői (Dev) mód: Remote Backend + Local Angular
+Ebben a módban a backend egy Linux szerveren fut, az Angular kliens pedig helyben a fejlesztői gépen (pl. macOS). A kommunikáció CORS használatával történik.
 
-- Frontend: [http://localhost:4200](http://localhost:4200)
-- Backend: [http://localhost:3000](http://localhost:3000)
-- API Proxy: Minden `/api/*` hívás a frontendről a backendre irányítódik.
+**Backend indítása (Linux szerver - 192.168.1.31):**
+1. Függőségek telepítése: `npm install` (a gyökérben)
+2. Környezeti változók beállítása a `server/.env.development` fájlban:
+   ```
+   NODE_ENV=development
+   PORT=3000
+   MEDIA_ROOT=/home/gabesz/share/camera/aqara_video
+   ```
+3. Szerver indítása: `npm run dev` (vagy `npm run start`)
+   - A szerver a `0.0.0.0:3000` címen fog figyelni.
 
-## Build és Production
+**Frontend indítása (Local machine):**
+1. Az Angular kliens a `http://localhost:4200` címen fut.
+2. A `client/src/environments/environment.development.ts` fájlban az `apiBaseUrl` a Linux szerver IP címére mutat: `http://192.168.1.31:3000`.
+3. Indítás: `npm run dev` (a gyökérből) vagy `cd client && npm start`.
+   - A böngészőben a `http://localhost:4200` címet nyisd meg.
 
-A teljes projekt (kliens + szerver) buildelése:
+**CORS beállítások:**
+A backend alapértelmezés szerint csak a `http://localhost:4200` origin-ről fogad kéréseket. Ha az Angular más porton fut, a `server/src/app.ts` fájlban a `corsOptions` tartalmát frissíteni kell.
 
-```bash
-npm run build
-```
+### B) Production mód: Express szolgálja ki az Angular buildet
+Ebben a módban az Express szerver statikus fájlként szolgálja ki az Angular buildet, így nincs szükség CORS-ra.
 
-Indítás production módban:
-
-```bash
-npm run start
-```
-
-Production módban az Express szerver szolgálja ki az Angular buildet a `/` útvonalon, és az API-t a `/api` útvonalon. SPA fallback támogatott (minden nem API útvonal az `index.html`-re irányít).
+1. Build készítése: `npm run build`
+2. Indítás: `npm run start`
+3. Elérhetőség: `http://<szerver-ip>:3000`
 
 ## Környezeti változók (ENV)
 
 A szerver konfigurációja környezeti változókon keresztül történik. A `server/` mappában találhatóak az alábbi fájlok:
-- `.env.development`: Fejlesztői környezet (macOS/Windows)
-- `.env.production`: Éles környezet (Ubuntu)
-- `.env.example`: Példa fájl, ami git-be kerül
+- `.env.development`: Fejlesztői környezet
+- `.env.production`: Éles környezet
 
 ### MEDIA_ROOT beállítása
 A `MEDIA_ROOT` egy **abszolút útvonal** kell, hogy legyen, ahol a kamera videók találhatóak.
 
-**macOS példa (.env.development):**
+**Példa beállítás:**
 ```
-NODE_ENV=development
-PORT=3000
-MEDIA_ROOT=/Users/felhasznalonev/Downloads/camera
-```
-
-**Ubuntu példa (.env.production):**
-```
-NODE_ENV=production
-PORT=3000
-MEDIA_ROOT=/home/gabesz/share/camera
+MEDIA_ROOT=/home/gabesz/share/camera/aqara_video
 ```
 
 *Fontos: Ha a megadott útvonal nem létezik, a szerver hibaüzenettel leáll.*

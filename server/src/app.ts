@@ -15,7 +15,14 @@ app.use(helmet({
   contentSecurityPolicy: false, // Angular fix for production
 }));
 app.use(compression());
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:4200',
+  methods: ['GET', 'OPTIONS'],
+  credentials: false,
+  allowedHeaders: ['Content-Type', 'Range'],
+  exposedHeaders: ['Accept-Ranges', 'Content-Range', 'Content-Length']
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
 
