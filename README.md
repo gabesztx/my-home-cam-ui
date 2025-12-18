@@ -4,13 +4,23 @@ Egy modern, full-stack starter projekt Angular v20+ és Express (TypeScript) ala
 
 ## Követelmények
 
+### Backend (Node.js)
 - **Node.js**: v20 vagy újabb
 - **npm**: v10 vagy újabb
+- **ffmpeg**: Videó thumbnail és frame extraction
+
+### AI Service (opcionális)
+- **Python**: 3.8 vagy újabb
+- **pip**: Python package manager
+- **ffmpeg**: Videó frame extraction
+- **~500 MB RAM**: AI modell futtatásához
+- **~200 MB tárhely**: PyTorch és modell súlyok
 
 ## Projekt struktúra
 
 - `client/`: Angular frontend alkalmazás (Signals, standalone komponensek, OnPush)
 - `server/`: Express backend alkalmazás (TypeScript, szeparált architektúra)
+- `ai-service/`: Python AI mikroszerviz (FastAPI, PyTorch, MobileNetV2)
 - `package.json`: Gyökér szintű kényelmi scriptek a teljes projekt kezeléséhez
 
 ## Telepítés
@@ -73,18 +83,81 @@ MEDIA_ROOT=/home/gabesz/share/camera/aqara_video
 
 *Fontos: Ha a megadott útvonal nem létezik, a szerver hibaüzenettel leáll.*
 
+### AI Service beállítások (opcionális)
+
+Az AI címkézés funkció opcionális. A következő környezeti változók szabályozzák:
+
+```
+AI_ENABLED=true
+AI_SERVICE_URL=http://127.0.0.1:8001
+AI_CONFIDENCE=0.55
+```
+
+- **AI_ENABLED**: `true` vagy `false` - AI funkció be/kikapcsolása
+- **AI_SERVICE_URL**: Az AI mikroszerviz URL-je (alapértelmezett: `http://127.0.0.1:8001`)
+- **AI_CONFIDENCE**: Minimum konfidencia küszöb (0.0-1.0, alapértelmezett: 0.55)
+
+**AI kategóriák:**
+- **EMBER**: Személy, ember
+- **ÁLLAT**: Bármely állat (kutya, macska, madár, stb.)
+- **KOCSI**: Jármű (autó, busz, teherautó, stb.)
+- **ISMERETLEN**: Alacsony konfidencia vagy nem releváns osztály
+
 ## API Végpontok
 
+### Általános
 - `GET /api/health`: Ellenőrzi a szerver állapotát. Visszatérési érték: `{ "ok": true, "ts": "<ISO timestamp>" }`
 - `GET /api/debug/media-root` (csak dev módban): Visszaadja a feloldott `MEDIA_ROOT` útvonalat.
+
+### Média
 - `GET /api/cameras`: Elérhető kamerák listája.
 - `GET /api/cameras/:cameraId/dates`: Kamera dátumainak listája (csökkenő sorrendben).
-- `GET /api/cameras/:cameraId/dates/:date/videos`: Videók listája egy adott napon.
+- `GET /api/cameras/:cameraId/dates/:date/videos`: Videók listája egy adott napon (opcionálisan label-ekkel).
 - `GET /api/videos/stream?path=<relativePath>`: Videó streamelése (támogatja a Range requesteket).
 - `GET /api/videos/thumbnail?path=<relativePath>&w=<width>&mode=<mode>`: Videó előnézeti kép generálása/lekérése.
 
-## Rendszerkövetelmények (Thumbnail generáláshoz)
+### AI Címkézés (opcionális)
+- `GET /api/videos/labels?path=<relativePath>`: Videó AI címkéjének lekérése cache-ből.
+- `POST /api/videos/labels?path=<relativePath>`: Videó AI címkézésének indítása (202 Accepted).
 
+## Rendszerkövetelmények
+
+### Thumbnail generáláshoz
 A videó előnézeti képek generálásához a szerveren telepítve kell lennie az **ffmpeg** eszköznek.
 - **macOS**: `brew install ffmpeg`
 - **Ubuntu**: `sudo apt update && sudo apt install ffmpeg`
+
+### AI Service telepítése (opcionális)
+
+Az AI címkézés funkció használatához telepíteni kell a Python AI mikroszervizet. Részletes telepítési útmutató:
+
+📖 **[SETUP_AI.md](./SETUP_AI.md)** - AI Service telepítési útmutató
+
+**Gyors indítás:**
+```bash
+# 1. Python virtuális környezet létrehozása
+cd ai-service
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2. Függőségek telepítése
+pip install -r requirements.txt
+
+# 3. AI Service indítása (fejlesztői mód)
+cd ../server
+npm install  # concurrently csomag telepítése
+npm run dev  # Node API + AI Service együtt indul
+```
+
+**Produkciós telepítés:**
+```bash
+# Systemd service használata
+sudo cp ai-service.service /etc/systemd/system/
+sudo systemctl enable ai-service
+sudo systemctl start ai-service
+```
+
+**Teljesítmény:**
+- Inference idő: ~150-300 ms (Intel G3240 CPU)
+- Memória használat: ~400-500 MB
+- Modell: MobileNetV2 (CPU-optimalizált)

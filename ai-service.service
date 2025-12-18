@@ -1,0 +1,13 @@
+[Unit]
+Description=HomeCam AI Service
+After=network.target
+
+[Service]
+User=gabesz
+WorkingDirectory=/home/gabesz/my-home-cam-ui/ai-service
+ExecStart=/home/gabesz/my-home-cam-ui/ai-service/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8001
+Restart=always
+Environment="AI_CONFIDENCE=0.55"
+
+[Install]
+WantedBy=multi-user.target
