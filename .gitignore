@@ -6,3 +6,4 @@ client/dist
 .DS_Store
 .ideaserver/.cache/
 .cache
+.idea
