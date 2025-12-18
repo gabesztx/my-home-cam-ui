@@ -136,15 +136,21 @@ export class MediaBrowserComponent {
     });
   }
 
-  pollLabel(relativePath: string) {
+  pollLabel(relativePath: string, retryCount = 0) {
+    if (retryCount > 10) { // Max 30 másodperc polling
+      this.analyzing.update(state => ({ ...state, [relativePath]: false }));
+      return;
+    }
+
     this.mediaApi.getLabel(relativePath).subscribe({
       next: (label) => {
         this.updateVideoLabel(relativePath, label.topLabel, label.confidence);
         this.analyzing.update(state => ({ ...state, [relativePath]: false }));
       },
       error: (err) => {
-        if (err.status === 202) {
-          setTimeout(() => this.pollLabel(relativePath), 3000);
+        if (err.status === 202 || (err.status === 404 && retryCount < 10)) {
+          // Ha még nincs kész (202) vagy még létre sem jött a fájl (404), próbálkozzunk újra
+          setTimeout(() => this.pollLabel(relativePath, retryCount + 1), 3000);
         } else {
           this.analyzing.update(state => ({ ...state, [relativePath]: false }));
         }

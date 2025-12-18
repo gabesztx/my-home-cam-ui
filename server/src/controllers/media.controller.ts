@@ -194,6 +194,13 @@ export class MediaController {
         return res.status(404).json({ error: 'Video not found' });
       }
 
+      // Ellenőrizzük a modellt is, mielőtt elindítjuk
+      try {
+        await aiLabelerService.validateModel();
+      } catch (err) {
+        return res.status(500).json({ error: 'AI model error: ' + (err as Error).message });
+      }
+
       // Trigger processing in background (don't await)
       aiLabelerService.labelVideo(relativePath).catch(err => {
         console.error(`Error processing video ${relativePath}:`, err);

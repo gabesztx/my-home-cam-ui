@@ -37,6 +37,13 @@ export class AiLabelerService {
     }
   }
 
+  async validateModel() {
+    if (!config.aiEnabled) throw new Error('AI_DISABLED');
+    if (!existsSync(config.aiModelPath)) {
+      throw new Error(`Model file not found at ${config.aiModelPath}`);
+    }
+  }
+
   private async loadModel() {
     if (this.session) return this.session;
     if (!config.aiEnabled) throw new Error('AI_DISABLED');
