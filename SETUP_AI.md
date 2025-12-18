@@ -73,6 +73,13 @@ pip install -r requirements.txt
 
 **Figyelem:** Ez a lépés eltarthat néhány percig, mert letölti a PyTorch-ot és a torchvision-t (~200 MB).
 
+**NumPy kompatibilitás:** A `requirements.txt` tartalmazza a `numpy<2` korlátozást, hogy biztosítsa a PyTorch 2.2.0 kompatibilitást. Ha már telepítetted a függőségeket és NumPy 2.x figyelmeztetést kapsz, futtasd újra:
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt --force-reinstall
+```
+
 ### 3.5. Modell letöltése (első indítás)
 
 Az első indításkor a PyTorch automatikusan letölti a MobileNetV2 ImageNet súlyokat (~14 MB).
