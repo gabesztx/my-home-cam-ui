@@ -49,5 +49,4 @@ app.get('*', (req, res, next) => {
 // Post-Middlewares
 app.use(notFound);
 app.use(errorHandler);
-
 export default app;
